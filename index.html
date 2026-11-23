@@ -3,16 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Snowglobe Wishes · V1.1</title>
+<title>Snowglobe Wishes · V1.3</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#fff7f3;color:#544048;font-family:system-ui,sans-serif}
 main{width:min(100%,510px);margin:auto;padding:14px 14px max(18px,env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}h1{font:italic 30px Georgia;margin:0;color:#654858}small{font-size:11px}
-.stage{position:relative;overflow:hidden;border-radius:25px;aspect-ratio:9/13;background:radial-gradient(ellipse at 50% 35%,#fffef5,transparent 60%),linear-gradient(#f5e3ec,#f9f0e6 65%,#e7f2e9);box-shadow:0 10px 32px #805f722a}
-video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:cover;transform:scaleX(-1)}canvas{pointer-events:none}
-.status,.cue{position:absolute;padding:7px 11px;border-radius:20px;background:#fff9f1ed;font-size:12px}.status{top:12px;left:12px}.cue{bottom:13px;left:50%;transform:translateX(-50%);text-align:center;width:max-content;max-width:94%}.cue:empty{display:none}
+main{width:min(100%,510px,calc(40svh + 28px))}
+.stage{position:relative;overflow:hidden;border-radius:18px;aspect-ratio:9/16;box-shadow:0 10px 32px #805f722a;background:#f2e5df}
+.snowfield,.room{position:absolute;left:0;right:0;overflow:hidden}
+.snowfield{top:0;height:60%;background:radial-gradient(ellipse at 48% 39%,#fffdf1 6%,transparent 64%),linear-gradient(160deg,#e7e4f2,#faeef0 55%,#dfede2)}
+.room{top:60%;bottom:0;background:radial-gradient(ellipse at 50% 65%,#fdf3e7,#e8cdd5);box-shadow:inset 0 3px 10px #5934472b}
+.stage::after{content:"";position:absolute;top:60%;left:0;right:0;height:6px;transform:translateY(-50%);background:linear-gradient(#fff5e2,#e5c5b9);box-shadow:0 2px 5px #53384233;pointer-events:none}
+video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:cover;object-position:50% 44%;transform:scaleX(-1)}canvas{pointer-events:none}
+.room-note{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#775968;font-size:13px;padding:12px}.room-note[hidden]{display:none}
+.readout{display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 9px;min-height:22px;margin:8px 1px 0;font-size:12px}.status{font-weight:650}.cue:empty{display:none}
 .controls,.practice{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}button,select{border:1px solid #ead7de;border-radius:20px;background:#fffdf8;color:inherit;padding:8px 11px;font:inherit;font-size:13px;cursor:pointer}button:disabled{opacity:.55}.primary{background:#754e64;color:white;border-color:#754e64}details{margin:10px 3px;font-size:13px}summary{cursor:pointer}li{margin:5px 0}
-@media(max-height:780px){.stage{max-height:65svh}}
+
 
 .guide{margin:0 0 12px;border:1px solid #ead7de;border-radius:18px;background:#fffcf7;overflow:hidden}
 .guide summary{padding:10px 13px;font-weight:650;list-style-position:inside}
@@ -27,7 +33,7 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 </head>
 <body>
 <main>
-<header><h1>Snowglobe Wishes</h1><small>V1.1</small></header>
+<header><h1>Snowglobe Wishes</h1><small>V1.3</small></header>
 <details class="guide" id="guide" open>
 <summary id="guideTitle">How to Play · 使用指南</summary>
 <div class="guide-body">
@@ -40,8 +46,13 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 </div>
 </details>
 <div class="stage">
+<div class="snowfield"><canvas id="art" aria-label="圣诞雪景"></canvas></div>
+<div class="room">
+<div id="roomNote" class="room-note">打开相机后，你们会出现在这里</div>
 <video id="video" playsinline muted hidden></video>
-<canvas id="art" aria-label="圣诞雪景"></canvas>
+</div>
+</div>
+<div class="readout">
 <div id="status" class="status" role="status">雪景预览</div>
 <div id="cue" class="cue" aria-live="polite">用一只手画出你的圣诞节</div>
 </div>
@@ -60,7 +71,8 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 </main>
 <script type="module">
 const byId = id => document.getElementById(id);
-const video = byId('video'), canvas = byId('art'), ctx = canvas.getContext('2d');
+const video = byId('video'), canvas = byId('art');
+let ctx = canvas.getContext('2d');
 const camera = byId('camera'), status = byId('status'), cue = byId('cue'), people = byId('people');
 const guideCopy = {
   'zh-CN': {
@@ -71,6 +83,7 @@ const guideCopy = {
       ['2 人 · 左右并排','左边画树和点星，右边依次做圣诞老人和驯鹿。结尾两人各撒一次雪。'],
       ['3 人 · 左、中、右','中间画树和点星，左边比赞叫出圣诞老人，右边比 V 叫出驯鹿。三人各撒一次雪。']
     ],
+    layout:'上方 60% 是窗外雪景，下方 40% 是人像。三人拍摄时并排站，稍微退后一点，让所有脸都落在窗框下方。',
     setupTitle:'开拍前',
     setup:'用 iPhone Safari 打开网页，选择「自动人数」或手动选 1、2、3 人，再点「打开相机」并允许访问。手机竖放，确保每个人的脸和一只手都在画面内。',
     gestureTitle:'五个手势',
@@ -91,6 +104,7 @@ const guideCopy = {
       ['2人 · 左右に並ぶ','左の人はツリーと星、右の人はサンタとトナカイを順番に出します。最後に2人がそれぞれ雪のジェスチャーをします。'],
       ['3人 · 左・真ん中・右','真ん中の人はツリーと星、左の人は親指を立ててサンタ、右の人はVサインでトナカイを出します。最後に3人がそれぞれ雪のジェスチャーをします。']
     ],
+    layout:'上60％は窓の外の雪景色、下40％はカメラ映像です。3人で撮るときは横に並び、少し下がって全員の顔を下の枠に収めます。',
     setupTitle:'撮影の準備',
     setup:'iPhoneのSafariでページを開き、人数は自動か1〜3人を選びます。「打开相机」をタップし、カメラを許可してください。スマホは縦向きに置き、全員の顔と片手が画面に入るようにします。',
     gestureTitle:'5つのジェスチャー',
@@ -111,6 +125,7 @@ const guideCopy = {
       ['2 people · Side by side','Left: draw the tree and light the star. Right: bring out Santa and the reindeer in turn. Finish with one snow gesture each.'],
       ['3 people · Left, center, right','Center: tree and star. Left: thumbs-up for Santa. Right: V sign for the reindeer. Finish with one snow gesture each.']
     ],
+    layout:'The snowy scene fills the top 60% and the camera fills the bottom 40%. For three people, stand side by side and take a small step back so every face fits below the windowsill.',
     setupTitle:'Before you film',
     setup:'Open the page in Safari on your iPhone. Choose the automatic head count or select 1, 2, or 3. Tap “打开相机” (Open camera) and allow access. Set your phone upright and keep everyone’s face and one hand each in frame.',
     gestureTitle:'Five gestures',
@@ -134,7 +149,7 @@ function showGuide(language) {
   content.innerHTML = `
     <h2>${copy.castTitle}</h2>
     <dl class="cast">${copy.cast.map(([title,body])=>`<div><dt>${title}</dt><dd>${body}</dd></div>`).join('')}</dl>
-    <h2>${copy.setupTitle}</h2><p>${copy.setup}</p>
+    <h2>${copy.setupTitle}</h2><p>${copy.layout}</p><p>${copy.setup}</p>
     <h2>${copy.gestureTitle}</h2><ol>${copy.gestures.map(gesture=>`<li>${gesture}</li>`).join('')}</ol>
     <p>${copy.record}</p>`;
   for (const button of languageButtons) button.setAttribute('aria-pressed',String(button.dataset.language === language));
@@ -182,10 +197,7 @@ people.onchange = reset;
 document.querySelectorAll('[data-effect]').forEach(button => button.onclick = () => trigger(button.dataset.effect));
 
 function cover(point) {
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  const vw = video.videoWidth || w, vh = video.videoHeight || h;
-  const scale = Math.max(w/vw,h/vh);
-  return {x:((1-point.x)*vw*scale+(w-vw*scale)/2)/w,y:(point.y*vh*scale+(h-vh*scale)/2)/h};
+  return {x:1-point.x,y:point.y};
 }
 function fingerUp(points, finger) {
   const [base,joint,tip] = [[2,3,4],[5,6,8],[9,10,12],[13,14,16],[17,18,20]][finger].map(i=>points[i]);
@@ -315,6 +327,7 @@ function stop() {
   stream = null;
   video.srcObject = null;
   video.hidden = true;
+  byId('roomNote').hidden = false;
   camera.textContent = '打开相机';
   status.textContent = '雪景预览';
 }
@@ -327,6 +340,7 @@ async function openCamera() {
     stream = await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
     video.srcObject = stream;
     video.hidden = false;
+    byId('roomNote').hidden = true;
     await video.play();
     status.textContent = '加载手势识别…';
     if (!hands || !faces) {
@@ -382,89 +396,186 @@ function star(x,y,size,color) {
     }
   });
 }
+function pigment(seed) {
+  let state = seed;
+  return () => {
+    state = (Math.imul(state,1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+function brush(color, width, draw) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  draw();
+  ctx.stroke();
+}
+function wash(x,y,rx,ry,light,dark,tilt=0) {
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(tilt);
+  ctx.scale(rx,ry);
+  const gradient=ctx.createRadialGradient(-.30,-.35,.04,.06,.10,1.03);
+  gradient.addColorStop(0,light);
+  gradient.addColorStop(.76,dark);
+  gradient.addColorStop(1,dark);
+  ellipse(0,0,1,1,gradient);
+  ctx.restore();
+}
+const painted = new Map();
+function illustration(key, draw) {
+  if (!painted.has(key)) {
+    const surface = document.createElement('canvas');
+    surface.width = 360;
+    surface.height = 440;
+    const screen = ctx;
+    ctx = surface.getContext('2d');
+    try {
+      ctx.setTransform(2,0,0,2,180,392);
+      draw();
+      const random = pigment(41);
+      ctx.globalCompositeOperation = 'source-atop';
+      for (let i=0;i<5200;i++) {
+        const x=random()*180-90,y=random()*220-196;
+        const light = random()>.46;
+        ctx.fillStyle = light ? '#fff7e92a' : '#62424a17';
+        ctx.fillRect(x,y,.25+random()*1.25,.25+random()*.85);
+      }
+      painted.set(key,surface);
+    } finally {
+      ctx = screen;
+    }
+  }
+  ctx.drawImage(painted.get(key),-90,-196,180,220);
+}
 function gift(x,y,size,color) {
-  ctx.fillStyle=color;
-  ctx.fillRect(x-size/2,y-size*.8,size,size*.8);
-  ctx.fillStyle='#fff1d0';
-  ctx.fillRect(x-2,y-size*.8,4,size*.8);
-  ellipse(x-4,y-size*.84,5,3,'#fff1d0');
-  ellipse(x+4,y-size*.84,5,3,'#fff1d0');
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(x<0?-.08:.07);
+  shape(color,()=>{
+    ctx.moveTo(-size/2,-size*.8);
+    ctx.lineTo(size*.46,-size*.84);
+    ctx.lineTo(size*.52,-size*.06);
+    ctx.quadraticCurveTo(size*.05,size*.04,-size*.47,-size*.01);
+  });
+  brush('#fff2d7',2.7,()=>{
+    ctx.moveTo(-1,-size*.76);ctx.quadraticCurveTo(1,-size*.4,0,0);
+    ctx.moveTo(-size*.46,-size*.54);ctx.quadraticCurveTo(0,-size*.58,size*.47,-size*.55);
+  });
+  brush('#fff0d3',1.7,()=>{
+    ctx.moveTo(0,-size*.77);ctx.bezierCurveTo(-15,-size-6,-13,-size*.65,0,-size*.77);
+    ctx.bezierCurveTo(13,-size-8,12,-size*.68,0,-size*.77);
+  });
+  ctx.restore();
 }
 function tree() {
-  const gradient=ctx.createLinearGradient(-55,-125,62,0);
-  gradient.addColorStop(0,'#e5f6e1');
-  gradient.addColorStop(.5,'#a8d5b4');
-  gradient.addColorStop(1,'#6faaa0');
-  ctx.fillStyle='#b68c79';
-  ctx.fillRect(-8,-24,16,23);
-  for(let i=0;i<4;i++) {
-    const width=64-i*12, y=-17-i*25;
-    shape(gradient,()=>{
-      ctx.moveTo(0,y-66);
-      ctx.quadraticCurveTo(width*.55,y-25,width,y-5);
-      ctx.quadraticCurveTo(width*.45,y+14,0,y+4);
-      ctx.quadraticCurveTo(-width*.45,y+14,-width,y-5);
-      ctx.quadraticCurveTo(-width*.55,y-25,0,y-66);
+  illustration('tree',()=>{
+    const random=pigment(68);
+    wash(0,-13,7,15,'#c59c83','#967264');
+    const inks=['#678f83','#8bb2a0','#afd0b4','#cce1c1','#789e90','#b6d6be'];
+    for(let tier=0;tier<5;tier++){
+      const y=-18-tier*26,width=60-tier*10;
+      wash(1,y-9,width*.84,21,'#bdd8bd','#8fb6a36b',-.04);
+      for(let i=0;i<38;i++){
+        const direction=i%2===0?-1:1;
+        const a=random(), reach=(.18+random()*.82)*width;
+        const origin=y-23-a*10;
+        const end=y+random()*12-5;
+        brush(inks[Math.floor(random()*inks.length)],.65+random()*2.3,()=>{
+          ctx.moveTo(direction*random()*7,origin);
+          ctx.quadraticCurveTo(direction*reach*.52,end-7,direction*reach,end);
+        });
+      }
+      for(let i=0;i<13;i++){
+        const x=(random()-.5)*width*1.75, dy=random()*10;
+        brush('#f4f4dcab',.55+random()*1.3,()=>{
+          ctx.moveTo(x,y+dy-6);ctx.quadraticCurveTo(x+2,y+dy-8,x+4,y+dy-5);
+        });
+      }
+    }
+    brush('#c3d9bb',2,()=>{ctx.moveTo(2,-129);ctx.quadraticCurveTo(3,-144,-2,-157);});
+    for (const [left,right,y] of [[-48,43,-28],[-34,32,-56],[-21,21,-83]]){
+      brush('#fff1ceac',1.25,()=>{
+        ctx.moveTo(left,y-5);ctx.quadraticCurveTo(4,y+13,right,y-8);
+      });
+    }
+    const baubles=[['#fff5d8','#dfb06b'],['#fff0ed','#d88da3'],['#fefbf0','#d2dac1']];
+    [[-44,-29],[38,-31],[-25,-57],[12,-28],[27,-61],[-16,-93],[8,-79],[1,-116]].forEach(([x,y],i)=>{
+      const [light,dark]=baubles[i%3];
+      wash(x,y,4.4,4.7,light,dark,.18);
+      ellipse(x-1,y-1.5,.9,1,'#fff9ed');
     });
-  }
-  ctx.strokeStyle='#fff4d9';
-  ctx.lineWidth=2.6;
-  ctx.lineCap='round';
-  for(let i=0;i<3;i++) {
-    const w=51-i*12,y=-23-i*29;
-    ctx.beginPath();
-    ctx.moveTo(-w,y-12);
-    ctx.quadraticCurveTo(-w*.1,y+11,w,y-8);
-    ctx.stroke();
-  }
-  const colors=['#f6becb','#fff7e1','#fddd9a'];
-  [[-43,-32],[42,-27],[-25,-59],[12,-40],[27,-66],[-16,-92],[8,-78],[1,-115]].forEach(([x,y],i)=>{
-    ellipse(x,y,4.8,4.8,colors[i%3]);
-    ellipse(x-1,y-1.4,1.3,1.3,'#fffef7');
+    gift(-35,4,21,'#c78da5');
+    gift(37,3,17,'#87b5a5');
   });
-  gift(-34,4,23,'#dba1b6');
-  gift(36,4,19,'#8dc0ad');
+}
+function faceMarks(spread,y) {
+  for(const side of [-1,1]){
+    brush('#634b49',1.5,()=>{
+      ctx.moveTo(side*spread-.9,y+.2);ctx.quadraticCurveTo(side*spread,y-2,side*spread+1,y);
+    });
+    ctx.save();
+    ctx.globalAlpha=.65;
+    wash(side*(spread+5),y+5,4.2,2.5,'#f8b4b6','#e68c9977');
+    ctx.restore();
+  }
 }
 function santa() {
-  ellipse(0,-15,27,20,'#c9687b');
-  ellipse(0,-42,25,25,'#fff5ea');
-  ellipse(0,-48,20,16,'#ffdcba');
-  shape('#c9687b',()=>{
-    ctx.moveTo(-24,-58);ctx.quadraticCurveTo(-10,-97,17,-88);
-    ctx.quadraticCurveTo(24,-78,15,-58);
+  illustration('santa',()=>{
+    wash(0,-15,24,18,'#e8a2af','#b75974',-.11);
+    wash(-16,-18,9,7,'#edabb3','#b95e78',.3);
+    wash(13,-16,9,7,'#d78a9b','#b95e78',-.4);
+    wash(-8,-3,8,4,'#876173','#654958');
+    wash(10,-3,8,4,'#876173','#654958');
+    wash(-1,-46,20,18,'#ffe7cd','#e9b59e');
+    for(const [x,y,rx,ry] of [[-16,-42,8,13],[15,-43,8,12],[-10,-34,11,10],[4,-32,13,11],[12,-36,9,9]]){
+      wash(x,y,rx,ry,'#fffdf2','#e8d6d3');
+    }
+    const red=ctx.createLinearGradient(-23,-84,24,-60);
+    red.addColorStop(0,'#b7627d');
+    red.addColorStop(.48,'#e7a0ae');
+    red.addColorStop(1,'#bd6380');
+    shape(red,()=>{
+      ctx.moveTo(-24,-58);
+      ctx.bezierCurveTo(-19,-73,-5,-91,12,-88);
+      ctx.quadraticCurveTo(24,-89,26,-76);
+      ctx.quadraticCurveTo(13,-82,16,-57);
+    });
+    brush('#984f6770',1,()=>{ctx.moveTo(-23,-59);ctx.bezierCurveTo(-17,-77,0,-93,15,-86);});
+    wash(-3,-59,23,5.5,'#fffcec','#e8d7d4',-.07);
+    wash(25,-76,6,6.5,'#fffcec','#e7d6d1');
+    faceMarks(7,-48);
+    wash(0,-44,3.8,2.9,'#f6bfac','#db9c90');
+    gift(22,2,18,'#90b5a7');
   });
-  ellipse(19,-86,7,7,'#fff8ef');
-  ellipse(-3,-59,25,6,'#fff8ef');
-  ellipse(-7,-47,2,2.5,'#553c44');
-  ellipse(7,-47,2,2.5,'#553c44');
-  ellipse(-13,-42,4,2.5,'#ed9aa8');
-  ellipse(13,-42,4,2.5,'#ed9aa8');
-  gift(23,2,21,'#8ebaac');
 }
 function deer() {
-  ellipse(0,-17,23,17,'#be8c73');
-  ctx.strokeStyle='#956755';
-  ctx.lineWidth=4;
-  ctx.lineCap='round';
-  for(const side of [-1,1]) {
-    ctx.beginPath();
-    ctx.moveTo(side*12,-58);
-    ctx.lineTo(side*20,-86);
-    ctx.moveTo(side*16,-71);
-    ctx.lineTo(side*27,-79);
-    ctx.moveTo(side*16,-71);
-    ctx.lineTo(side*12,-80);
-    ctx.stroke();
-    ellipse(side*22,-52,10,5,'#bd876e');
-    ellipse(side*24,-52,5,2.5,'#e3a69d');
-  }
-  ellipse(0,-44,22,22,'#ca997d');
-  ellipse(0,-35,13,9,'#f7d8bc');
-  ellipse(0,-38,5,3.5,'#c75269');
-  ellipse(-8,-48,2,2.8,'#533b3c');
-  ellipse(8,-48,2,2.8,'#533b3c');
-  ellipse(-1,-39,1.4,1,'#fff5e8');
-  ellipse(0,-19,15,3,'#d9869b');
+  illustration('deer',()=>{
+    for(const side of [-1,1]) {
+      brush('#986e62',2.3,()=>{
+        ctx.moveTo(side*11,-55);ctx.bezierCurveTo(side*16,-63,side*13,-73,side*20,-84);
+        ctx.moveTo(side*16,-69);ctx.quadraticCurveTo(side*24,-72,side*27,-79);
+        ctx.moveTo(side*17,-74);ctx.lineTo(side*13,-80);
+      });
+      brush('#e9bf9b',.55,()=>{ctx.moveTo(side*12,-57);ctx.quadraticCurveTo(side*15,-68,side*19,-80);});
+      wash(side*20,-52,10,5,'#e5b797','#aa7864',side*-.34);
+      wash(side*23,-52,5,2.25,'#eeb7ad','#d99c9d',side*-.34);
+    }
+    wash(1,-16,20,14,'#e5bb99','#b1806c',.14);
+    wash(-8,-3,5,4,'#a0756b','#785b56');
+    wash(9,-3,5,4,'#a0756b','#785b56');
+    wash(0,-45,20,20,'#f1caa6','#b98a72',-.07);
+    wash(0,-36,11,7,'#fbe5cb','#e2b59a');
+    faceMarks(8,-46);
+    wash(0,-39,4.4,3,'#e99ea6','#a74868');
+    ellipse(-1,-40,.85,.65,'#fff0dd');
+    brush('#bd738e',4.4,()=>{ctx.moveTo(-12,-22);ctx.quadraticCurveTo(1,-16,13,-21);});
+    brush('#ce8ea2',4.6,()=>{ctx.moveTo(7,-19);ctx.quadraticCurveTo(13,-14,12,-9);});
+    const random=pigment(94);
+    for(let i=0;i<8;i++) ellipse(random()*17-8.5,-60+random()*8,.65,.45,'#fff0d0ae');
+  });
 }
 function pop(name,x,y,draw,now,scale=1) {
   const effect=effects.get(name);
@@ -495,15 +606,22 @@ function render(now) {
   }
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
-  const ground=h*.82, scale=Math.min(w/345,h/475);
+  const ground=h*.88, scale=Math.min(w/195,h/212);
   const hasScene=effects.has('tree')||effects.has('santa')||effects.has('deer');
   if(hasScene) {
-    ellipse(w/2,ground+9,w*.45,23*scale,'#fff6edda');
-    ellipse(w/2,ground+15,w*.36,11*scale,'#f6dce591');
+    ctx.save();
+    ctx.translate(w/2,ground+12);
+    ctx.scale(w*.45,23*scale);
+    const snowWash = ctx.createRadialGradient(.04,-.18,.08,0,0,1);
+    snowWash.addColorStop(0,'#fff7e8d9');
+    snowWash.addColorStop(.53,'#fae5ed86');
+    snowWash.addColorStop(1,'#fbe9ee00');
+    ellipse(0,0,1,1,snowWash);
+    ctx.restore();
   }
   pop('tree',w/2,ground,tree,now,scale);
-  pop('santa',w*.22,ground+7,santa,now,scale*.83);
-  pop('deer',w*.79,ground+9,deer,now,scale*.86);
+  pop('santa',w*.16,ground+7,santa,now,scale*.68);
+  pop('deer',w*.84,ground+9,deer,now,scale*.69);
   const top=ground-165*scale;
   const starEffect=effects.get('star');
   if(starEffect) {
@@ -511,8 +629,12 @@ function render(now) {
     const origin=starEffect.point??{x:.5,y:.38};
     const x=origin.x*w+(w/2-origin.x*w)*t;
     const y=origin.y*h+(top-origin.y*h)*t-Math.sin(t*Math.PI)*20;
-    ellipse(x,y,18*scale,18*scale,'#ffefbd80');
-    star(x,y,12*scale,'#f9d486');
+    const glow=ctx.createRadialGradient(x,y,0,x,y,21*scale);
+    glow.addColorStop(0,'#fff2c4b8');
+    glow.addColorStop(1,'#fff2c400');
+    ellipse(x,y,21*scale,21*scale,glow);
+    star(x,y,11*scale,'#f4d593');
+    star(x-.7*scale,y-.7*scale,7*scale,'#fff4cb');
   }
   ctx.lineWidth=2;
   ctx.lineCap='round';
@@ -543,9 +665,8 @@ function render(now) {
   });
   if(!active && !hasScene) {
     ctx.save();
-    ctx.translate(w/2,h*.68);
+    ctx.translate(w/2,ground);
     ctx.scale(scale*.95,scale*.95);
-    ellipse(0,11,106,19,'#fffaf2');
     tree();
     star(0,-166,13,'#f9d486');
     ctx.restore();
