@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Snowglobe Wishes · V1.1</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fff7f3;color:#544048;font-family:system-ui,sans-serif}
+main{width:min(100%,510px);margin:auto;padding:14px 14px max(18px,env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}h1{font:italic 30px Georgia;margin:0;color:#654858}small{font-size:11px}
+.stage{position:relative;overflow:hidden;border-radius:25px;aspect-ratio:9/13;background:radial-gradient(ellipse at 50% 35%,#fffef5,transparent 60%),linear-gradient(#f5e3ec,#f9f0e6 65%,#e7f2e9);box-shadow:0 10px 32px #805f722a}
+video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:cover;transform:scaleX(-1)}canvas{pointer-events:none}
+.status,.cue{position:absolute;padding:7px 11px;border-radius:20px;background:#fff9f1ed;font-size:12px}.status{top:12px;left:12px}.cue{bottom:13px;left:50%;transform:translateX(-50%);text-align:center;width:max-content;max-width:94%}.cue:empty{display:none}
+.controls,.practice{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}button,select{border:1px solid #ead7de;border-radius:20px;background:#fffdf8;color:inherit;padding:8px 11px;font:inherit;font-size:13px;cursor:pointer}button:disabled{opacity:.55}.primary{background:#754e64;color:white;border-color:#754e64}details{margin:10px 3px;font-size:13px}summary{cursor:pointer}li{margin:5px 0}
+@media(max-height:780px){.stage{max-height:65svh}}
+
+.guide{margin:0 0 12px;border:1px solid #ead7de;border-radius:18px;background:#fffcf7;overflow:hidden}
+.guide summary{padding:10px 13px;font-weight:650;list-style-position:inside}
+.guide-body{padding:0 12px 12px}.languages{display:flex;gap:5px;margin:0 0 10px}
+.languages button[aria-pressed="true"]{color:white;background:#754e64;border-color:#754e64}
+.guide h2{font-size:14px;margin:12px 0 6px}.guide p{margin:5px 0;line-height:1.5}
+.guide ol{margin:6px 0;padding-inline-start:24px;line-height:1.45}
+.cast{display:grid;gap:6px}.cast div{border-radius:12px;background:#f4eee9;padding:6px 9px}
+.cast div:nth-child(2){background:#eaf4eb}.cast div:nth-child(3){background:#f6e9ef}
+.cast dt{font-weight:700}.cast dd{margin:2px 0 0;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Snowglobe Wishes</h1><small>V1.1</small></header>
+<details class="guide" id="guide" open>
+<summary id="guideTitle">How to Play · 使用指南</summary>
+<div class="guide-body">
+<div class="languages" role="group" aria-label="Guide language">
+<button type="button" data-language="zh-CN" lang="zh-CN" aria-pressed="true">中文</button>
+<button type="button" data-language="ja" lang="ja" aria-pressed="false">日本語</button>
+<button type="button" data-language="en" lang="en" aria-pressed="false">English</button>
+</div>
+<section id="guideContent"></section>
+</div>
+</details>
+<div class="stage">
+<video id="video" playsinline muted hidden></video>
+<canvas id="art" aria-label="圣诞雪景"></canvas>
+<div id="status" class="status" role="status">雪景预览</div>
+<div id="cue" class="cue" aria-live="polite">用一只手画出你的圣诞节</div>
+</div>
+<div class="controls">
+<button id="camera" class="primary">打开相机</button>
+<select id="people" aria-label="拍摄人数"><option value="auto">自动人数</option><option value="1">1 人</option><option value="2">2 人</option><option value="3">3 人</option></select>
+<button id="reset">重拍</button>
+</div>
+<details>
+<summary>特效预览</summary>
+<div class="practice">
+<button data-effect="tree">🎄 画树</button><button data-effect="santa">🎅 老人</button><button data-effect="deer">🦌 驯鹿</button><button data-effect="star">⭐ 点灯</button><button data-effect="snow">❄️ 下雪</button>
+</div>
+
+</details>
+</main>
+<script type="module">
+const byId = id => document.getElementById(id);
+const video = byId('video'), canvas = byId('art'), ctx = canvas.getContext('2d');
+const camera = byId('camera'), status = byId('status'), cue = byId('cue'), people = byId('people');
+const guideCopy = {
+  'zh-CN': {
+    title:'How to Play · 使用指南',
+    castTitle:'1～3 人怎么拍',
+    cast:[
+      ['1 人 · 站中间','一只手依次画树、比赞、比 V、捏亮星星，最后张掌向上撒雪。'],
+      ['2 人 · 左右并排','左边画树和点星，右边依次做圣诞老人和驯鹿。结尾两人各撒一次雪。'],
+      ['3 人 · 左、中、右','中间画树和点星，左边比赞叫出圣诞老人，右边比 V 叫出驯鹿。三人各撒一次雪。']
+    ],
+    setupTitle:'开拍前',
+    setup:'用 iPhone Safari 打开网页，选择「自动人数」或手动选 1、2、3 人，再点「打开相机」并允许访问。手机竖放，确保每个人的脸和一只手都在画面内。',
+    gestureTitle:'五个手势',
+    gestures:[
+      '🎄 圣诞树｜伸出食指，从上往下画一个大 Z。',
+      '🎅 圣诞老人｜竖起大拇指，停半拍。',
+      '🦌 驯鹿｜在脸旁比 V，停半拍。',
+      '⭐ 星星｜树出现后，用拇指和食指捏一下。',
+      '❄️ 飘雪｜星星亮起后，张开手掌向上抬。所有人各做一次，整屏才会飘雪。'
+    ],
+    record:'想保存视频，可以用 iPhone 的屏幕录制。点「重拍」即可再来一轮。'
+  },
+  ja: {
+    title:'How to Play · 遊び方',
+    castTitle:'1〜3人での撮り方',
+    cast:[
+      ['1人 · 真ん中に立つ','片手でツリーを描き、親指を立ててサンタ、Vサインでトナカイを呼びます。星を灯したら、手のひらを開いて上に持ち上げ、雪を降らせます。'],
+      ['2人 · 左右に並ぶ','左の人はツリーと星、右の人はサンタとトナカイを順番に出します。最後に2人がそれぞれ雪のジェスチャーをします。'],
+      ['3人 · 左・真ん中・右','真ん中の人はツリーと星、左の人は親指を立ててサンタ、右の人はVサインでトナカイを出します。最後に3人がそれぞれ雪のジェスチャーをします。']
+    ],
+    setupTitle:'撮影の準備',
+    setup:'iPhoneのSafariでページを開き、人数は自動か1〜3人を選びます。「打开相机」をタップし、カメラを許可してください。スマホは縦向きに置き、全員の顔と片手が画面に入るようにします。',
+    gestureTitle:'5つのジェスチャー',
+    gestures:[
+      '🎄 ツリー｜人差し指を伸ばし、上から下へ大きくZを描きます。',
+      '🎅 サンタ｜親指を立てて、少し止めます。',
+      '🦌 トナカイ｜顔の横でVサインを作り、少し止めます。',
+      '⭐ 星｜ツリーが出たら、親指と人差し指でつまむ動きをします。',
+      '❄️ 雪｜星が灯ったら、手のひらを開いて上へ。全員が1回ずつ行うと、画面いっぱいに雪が降ります。'
+    ],
+    record:'動画を残すには、iPhoneの画面収録を使います。「重拍」で最初からやり直せます。'
+  },
+  en: {
+    title:'How to Play',
+    castTitle:'How to film with 1–3 people',
+    cast:[
+      ['1 person · Center','Use one hand to draw the tree, give a thumbs-up, make a V sign, and pinch to light the star. Finish by lifting an open palm for snow.'],
+      ['2 people · Side by side','Left: draw the tree and light the star. Right: bring out Santa and the reindeer in turn. Finish with one snow gesture each.'],
+      ['3 people · Left, center, right','Center: tree and star. Left: thumbs-up for Santa. Right: V sign for the reindeer. Finish with one snow gesture each.']
+    ],
+    setupTitle:'Before you film',
+    setup:'Open the page in Safari on your iPhone. Choose the automatic head count or select 1, 2, or 3. Tap “打开相机” (Open camera) and allow access. Set your phone upright and keep everyone’s face and one hand each in frame.',
+    gestureTitle:'Five gestures',
+    gestures:[
+      '🎄 Tree | Point with your index finger and draw a big Z from top to bottom.',
+      '🎅 Santa | Give a thumbs-up and hold it for a beat.',
+      '🦌 Reindeer | Hold a V sign beside your face for a beat.',
+      '⭐ Star | Once the tree appears, pinch your thumb and index finger together.',
+      '❄️ Snow | Once the star lights up, lift an open palm. Snow fills the screen after everyone does it once.'
+    ],
+    record:'Use iPhone Screen Recording to save your video. Tap “重拍” (Retake) to start a new round.'
+  }
+};
+const languageButtons = [...document.querySelectorAll('[data-language]')];
+function showGuide(language) {
+  const copy = guideCopy[language];
+  byId('guideTitle').textContent = copy.title;
+  byId('guideTitle').lang = language;
+  const content = byId('guideContent');
+  content.lang = language;
+  content.innerHTML = `
+    <h2>${copy.castTitle}</h2>
+    <dl class="cast">${copy.cast.map(([title,body])=>`<div><dt>${title}</dt><dd>${body}</dd></div>`).join('')}</dl>
+    <h2>${copy.setupTitle}</h2><p>${copy.setup}</p>
+    <h2>${copy.gestureTitle}</h2><ol>${copy.gestures.map(gesture=>`<li>${gesture}</li>`).join('')}</ol>
+    <p>${copy.record}</p>`;
+  for (const button of languageButtons) button.setAttribute('aria-pressed',String(button.dataset.language === language));
+}
+for (const button of languageButtons) button.onclick = () => showGuide(button.dataset.language);
+showGuide('zh-CN');
+
+const version = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304';
+const models = 'https://storage.googleapis.com/mediapipe-models';
+const effects = new Map();
+let hands, faces, stream, active = false, tracks = [], roundCount = 0;
+let credits = new Set(), sparks = [], pendingStar = false, lastFrame = -1, lastFace = -Infinity, faceCount = 0;
+let faceDetections = [], nextId = 0, observedCount = 0, countSince = 0, stableCount = 0;
+const messages = {tree:'树长出来啦 · 比赞或比 V 来装饰',santa:'圣诞老人来送礼物了',deer:'小驯鹿找到圣诞树了',star:'星星亮啦 · 张掌向上撒雪',snow:'Merry Christmas!'};
+const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
+function trigger(name, point) {
+  if (effects.has(name)) return;
+  if (name === 'star' && !effects.has('tree')) {
+    pendingStar = true;
+    cue.textContent = '星星准备好了 · 先用食指画树';
+    return;
+  }
+  effects.set(name, {time:performance.now(),point});
+  cue.textContent = messages[name];
+  if (name === 'tree') {
+    roundCount = Number(people.value) || (faceCount === stableCount ? stableCount : faceCount) || 1;
+    if (pendingStar) {
+      pendingStar = false;
+      trigger('star');
+    }
+  }
+}
+function reset() {
+  effects.clear();
+  tracks = [];
+  credits.clear();
+  sparks = [];
+  pendingStar = false;
+  roundCount = 0;
+  cue.textContent = '伸出食指，画一个从上到下的 Z';
+}
+byId('reset').onclick = reset;
+people.onchange = reset;
+document.querySelectorAll('[data-effect]').forEach(button => button.onclick = () => trigger(button.dataset.effect));
+
+function cover(point) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const vw = video.videoWidth || w, vh = video.videoHeight || h;
+  const scale = Math.max(w/vw,h/vh);
+  return {x:((1-point.x)*vw*scale+(w-vw*scale)/2)/w,y:(point.y*vh*scale+(h-vh*scale)/2)/h};
+}
+function fingerUp(points, finger) {
+  const [base,joint,tip] = [[2,3,4],[5,6,8],[9,10,12],[13,14,16],[17,18,20]][finger].map(i=>points[i]);
+  return distance(tip,base) > 1.37*distance(joint,base) &&
+    distance(tip,points[0]) > 1.09*distance(joint,points[0]);
+}
+function isZ(path) {
+  if (path.length < 5) return false;
+  const first = path[0], last = path[path.length-1];
+  if (last.y-first.y < .095) return false;
+  for (const direction of [1,-1]) {
+    let peak = first.x * direction;
+    let trough = Infinity;
+    for (const point of path) {
+      const x = point.x * direction;
+      if (trough === Infinity) peak = Math.max(peak,x);
+      if (peak-first.x*direction > .055 && peak-x > .075) trough = Math.min(trough,x);
+      if (x-trough > .05) return true;
+    }
+  }
+  return false;
+}
+function watch(track, points, now, face) {
+  const wrist = points[0], tip = points[8], thumb = points[4];
+  const palm = distance(wrist,points[9]);
+  const [index,middle,ring,pinky] = [1,2,3,4].map(i=>fingerUp(points,i));
+  const pinched = distance(thumb,tip) < .33*palm;
+  let pose = '';
+  if (index && middle && ring && pinky) pose = 'open';
+  else if (pinched && !middle && !ring && !pinky) pose = 'star';
+  else if (index && middle && !ring && !pinky && distance(tip,points[12]) > .26*palm) pose = 'deer';
+  else if (index && !middle && !ring && !pinky) pose = 'point';
+  else if (!index && !middle && !ring && !pinky && fingerUp(points,0) && thumb.y < points[5].y-.2*palm) pose = 'santa';
+  const location = cover(tip);
+  if (track.pose !== pose) {
+    track.pose = pose;
+    track.since = now;
+    track.startY = wrist.y;
+    track.path = [];
+  }
+  if (pose === 'point' && !effects.has('tree')) {
+    track.path.push({...location,now});
+    track.path = track.path.filter(p=>now-p.now<2200);
+    if (isZ(track.path)) trigger('tree');
+  }
+  if ((pose === 'santa' || pose === 'deer') && now-track.since > 320) {
+    const nearFace = !face || distance(tip,face) < Math.max(.14,face.width*1.75);
+    if (pose === 'santa' || nearFace) trigger(pose,location);
+  }
+  if (pose === 'star' && now-track.since > 230) trigger('star',location);
+  if (pose === 'open' && effects.has('star') && !effects.has('snow') && track.startY-wrist.y > .034) {
+    const owner = track.faceId ?? track.id;
+    if (credits.has(owner) || (roundCount > 1 && track.faceId == null)) return;
+    credits.add(owner);
+    sparks.push({point:cover(wrist),time:now});
+    if (credits.size >= (roundCount || 1)) trigger('snow');
+    else cue.textContent = '撒雪 ' + credits.size + ' / ' + roundCount;
+  }
+}
+function updateFaces(now) {
+  const boxes = faces.detectForVideo(video,now).detections.map(({boundingBox:b})=>({
+    x:(b.originX+b.width/2)/video.videoWidth,
+    y:(b.originY+b.height/2)/video.videoHeight,
+    width:b.width/video.videoWidth
+  }));
+  const remaining = new Set(faceDetections);
+  const next = boxes.map(box=>{
+    const previous = [...remaining].sort((a,b)=>distance(a,box)-distance(b,box))[0];
+    if (previous && distance(previous,box) < Math.max(.09,box.width*.85)) {
+      remaining.delete(previous);
+      return {...box,id:previous.id,seen:now};
+    }
+    return {...box,id:++nextId,seen:now};
+  });
+  faceCount = boxes.length;
+  faceDetections = [...next,...[...remaining].filter(face=>now-face.seen<850)];
+  if (faceCount !== observedCount) {
+    observedCount = faceCount;
+    countSince = now;
+  } else if (faceCount && now-countSince > 550) stableCount = faceCount;
+}
+function detect(now) {
+  if (video.readyState < 2 || lastFrame === video.currentTime) return;
+  lastFrame = video.currentTime;
+  if (now-lastFace > 230) {
+    updateFaces(now);
+    lastFace = now;
+  }
+  const landmarks = hands.detectForVideo(video,now).landmarks;
+  const available = new Set(tracks.filter(track=>now-track.seen<650));
+  const paired = new Map();
+  const unassigned = [];
+  for (const points of landmarks) {
+    const wrist = points[0];
+    const nearest = faceDetections.filter(face=>now-face.seen<450).sort((a,b)=>
+      Math.abs(a.x-wrist.x)-Math.abs(b.x-wrist.x))[0];
+    if (!nearest) {
+      unassigned.push({points});
+      continue;
+    }
+    const score = Math.abs(nearest.x-wrist.x);
+    if (!paired.has(nearest.id) || paired.get(nearest.id).score > score) {
+      paired.set(nearest.id,{points,face:nearest,score});
+    }
+  }
+  const selected = [...paired.values(),...unassigned].slice(0,Number(people.value)||3);
+  const nextTracks = [];
+  for (const {points,face} of selected) {
+    const wrist = points[0];
+    const candidates = [...available].filter(track=>!face || track.faceId === face.id || track.faceId == null);
+    const previous = candidates.sort((a,b)=>distance(a.wrist,wrist)-distance(b.wrist,wrist))[0];
+    const track = previous && distance(previous.wrist,wrist)<.24 ? previous : {id:++nextId,pose:null,path:[]};
+    available.delete(track);
+    track.wrist = wrist;
+    track.faceId = face?.id ?? track.faceId;
+    track.seen = now;
+    watch(track,points,now,face);
+    nextTracks.push(track);
+  }
+  tracks = [...nextTracks,...available];
+  status.textContent = faceCount+' 人 · '+selected.length+' 只手'+(roundCount?' · 本轮 '+roundCount+' 人':'');
+}
+let lastDetection = -Infinity;
+function stop() {
+  active = false;
+  stream?.getTracks().forEach(track=>track.stop());
+  stream = null;
+  video.srcObject = null;
+  video.hidden = true;
+  camera.textContent = '打开相机';
+  status.textContent = '雪景预览';
+}
+async function openCamera() {
+  if (active) { stop(); return; }
+  camera.disabled = true;
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error('secure');
+    status.textContent = '等待相机权限…';
+    stream = await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+    video.srcObject = stream;
+    video.hidden = false;
+    await video.play();
+    status.textContent = '加载手势识别…';
+    if (!hands || !faces) {
+      const {FilesetResolver,HandLandmarker,FaceDetector} = await import(version+'/vision_bundle.mjs');
+      const wasm = await FilesetResolver.forVisionTasks(version+'/wasm');
+      hands ??= await HandLandmarker.createFromOptions(wasm,{
+        baseOptions:{modelAssetPath:models+'/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'},
+        runningMode:'VIDEO',numHands:3,minHandDetectionConfidence:.45,minHandPresenceConfidence:.45
+      });
+      faces ??= await FaceDetector.createFromOptions(wasm,{
+        baseOptions:{modelAssetPath:models+'/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},
+        runningMode:'VIDEO',minDetectionConfidence:.48
+      });
+    }
+    reset();
+    faceDetections = [];
+    faceCount = stableCount = observedCount = 0;
+    lastFrame = -1;
+    lastFace = -Infinity;
+    active = true;
+    byId('guide').open = false;
+    camera.textContent = '关闭相机';
+    cue.textContent = '伸出食指，画一个从上到下的 Z';
+  } catch (error) {
+    stop();
+    console.error(error);
+    status.textContent = error.message === 'secure' ? '请用 HTTPS 网页打开' :
+      error.name === 'NotAllowedError' ? '请允许 Safari 使用相机' : '相机或识别加载失败，可重新打开';
+  } finally {
+    camera.disabled = false;
+  }
+}
+camera.onclick = openCamera;
+addEventListener('pagehide',stop);
+function ellipse(x,y,rx,ry,color) {
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+  ctx.fill();
+}
+function shape(color, draw) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  draw();
+  ctx.closePath();
+  ctx.fill();
+}
+function star(x,y,size,color) {
+  shape(color,()=>{
+    for(let i=0;i<10;i++) {
+      const angle=i*Math.PI/5-Math.PI/2, r=i%2?size*.47:size;
+      ctx.lineTo(x+Math.cos(angle)*r,y+Math.sin(angle)*r);
+    }
+  });
+}
+function gift(x,y,size,color) {
+  ctx.fillStyle=color;
+  ctx.fillRect(x-size/2,y-size*.8,size,size*.8);
+  ctx.fillStyle='#fff1d0';
+  ctx.fillRect(x-2,y-size*.8,4,size*.8);
+  ellipse(x-4,y-size*.84,5,3,'#fff1d0');
+  ellipse(x+4,y-size*.84,5,3,'#fff1d0');
+}
+function tree() {
+  const gradient=ctx.createLinearGradient(-55,-125,62,0);
+  gradient.addColorStop(0,'#e5f6e1');
+  gradient.addColorStop(.5,'#a8d5b4');
+  gradient.addColorStop(1,'#6faaa0');
+  ctx.fillStyle='#b68c79';
+  ctx.fillRect(-8,-24,16,23);
+  for(let i=0;i<4;i++) {
+    const width=64-i*12, y=-17-i*25;
+    shape(gradient,()=>{
+      ctx.moveTo(0,y-66);
+      ctx.quadraticCurveTo(width*.55,y-25,width,y-5);
+      ctx.quadraticCurveTo(width*.45,y+14,0,y+4);
+      ctx.quadraticCurveTo(-width*.45,y+14,-width,y-5);
+      ctx.quadraticCurveTo(-width*.55,y-25,0,y-66);
+    });
+  }
+  ctx.strokeStyle='#fff4d9';
+  ctx.lineWidth=2.6;
+  ctx.lineCap='round';
+  for(let i=0;i<3;i++) {
+    const w=51-i*12,y=-23-i*29;
+    ctx.beginPath();
+    ctx.moveTo(-w,y-12);
+    ctx.quadraticCurveTo(-w*.1,y+11,w,y-8);
+    ctx.stroke();
+  }
+  const colors=['#f6becb','#fff7e1','#fddd9a'];
+  [[-43,-32],[42,-27],[-25,-59],[12,-40],[27,-66],[-16,-92],[8,-78],[1,-115]].forEach(([x,y],i)=>{
+    ellipse(x,y,4.8,4.8,colors[i%3]);
+    ellipse(x-1,y-1.4,1.3,1.3,'#fffef7');
+  });
+  gift(-34,4,23,'#dba1b6');
+  gift(36,4,19,'#8dc0ad');
+}
+function santa() {
+  ellipse(0,-15,27,20,'#c9687b');
+  ellipse(0,-42,25,25,'#fff5ea');
+  ellipse(0,-48,20,16,'#ffdcba');
+  shape('#c9687b',()=>{
+    ctx.moveTo(-24,-58);ctx.quadraticCurveTo(-10,-97,17,-88);
+    ctx.quadraticCurveTo(24,-78,15,-58);
+  });
+  ellipse(19,-86,7,7,'#fff8ef');
+  ellipse(-3,-59,25,6,'#fff8ef');
+  ellipse(-7,-47,2,2.5,'#553c44');
+  ellipse(7,-47,2,2.5,'#553c44');
+  ellipse(-13,-42,4,2.5,'#ed9aa8');
+  ellipse(13,-42,4,2.5,'#ed9aa8');
+  gift(23,2,21,'#8ebaac');
+}
+function deer() {
+  ellipse(0,-17,23,17,'#be8c73');
+  ctx.strokeStyle='#956755';
+  ctx.lineWidth=4;
+  ctx.lineCap='round';
+  for(const side of [-1,1]) {
+    ctx.beginPath();
+    ctx.moveTo(side*12,-58);
+    ctx.lineTo(side*20,-86);
+    ctx.moveTo(side*16,-71);
+    ctx.lineTo(side*27,-79);
+    ctx.moveTo(side*16,-71);
+    ctx.lineTo(side*12,-80);
+    ctx.stroke();
+    ellipse(side*22,-52,10,5,'#bd876e');
+    ellipse(side*24,-52,5,2.5,'#e3a69d');
+  }
+  ellipse(0,-44,22,22,'#ca997d');
+  ellipse(0,-35,13,9,'#f7d8bc');
+  ellipse(0,-38,5,3.5,'#c75269');
+  ellipse(-8,-48,2,2.8,'#533b3c');
+  ellipse(8,-48,2,2.8,'#533b3c');
+  ellipse(-1,-39,1.4,1,'#fff5e8');
+  ellipse(0,-19,15,3,'#d9869b');
+}
+function pop(name,x,y,draw,now,scale=1) {
+  const effect=effects.get(name);
+  if(!effect) return;
+  const t=clamp((now-effect.time)/450,0,1);
+  ctx.save();
+  ctx.translate(x,y+(1-t)*19);
+  const zoom=(1-Math.pow(1-t,3))*(1+.12*Math.sin(t*Math.PI))*scale;
+  ctx.scale(zoom,zoom);
+  draw();
+  ctx.restore();
+}
+const flakes=Array.from({length:64},()=>[Math.random(),Math.random(),Math.random(),Math.random()]);
+function render(now) {
+  if (active && now-lastDetection > 65) {
+    lastDetection=now;
+    try { detect(now); } catch(error) {
+      console.error(error);
+      stop();
+      status.textContent='识别中断 · 请重新打开相机';
+    }
+  }
+  const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(2,window.devicePixelRatio||1);
+  const width=Math.round(w*dpr),height=Math.round(h*dpr);
+  if (canvas.width!==width || canvas.height!==height) {
+    canvas.width=width;
+    canvas.height=height;
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  const ground=h*.82, scale=Math.min(w/345,h/475);
+  const hasScene=effects.has('tree')||effects.has('santa')||effects.has('deer');
+  if(hasScene) {
+    ellipse(w/2,ground+9,w*.45,23*scale,'#fff6edda');
+    ellipse(w/2,ground+15,w*.36,11*scale,'#f6dce591');
+  }
+  pop('tree',w/2,ground,tree,now,scale);
+  pop('santa',w*.22,ground+7,santa,now,scale*.83);
+  pop('deer',w*.79,ground+9,deer,now,scale*.86);
+  const top=ground-165*scale;
+  const starEffect=effects.get('star');
+  if(starEffect) {
+    const t=clamp((now-starEffect.time)/670,0,1);
+    const origin=starEffect.point??{x:.5,y:.38};
+    const x=origin.x*w+(w/2-origin.x*w)*t;
+    const y=origin.y*h+(top-origin.y*h)*t-Math.sin(t*Math.PI)*20;
+    ellipse(x,y,18*scale,18*scale,'#ffefbd80');
+    star(x,y,12*scale,'#f9d486');
+  }
+  ctx.lineWidth=2;
+  ctx.lineCap='round';
+  ctx.strokeStyle='#d1eee3';
+  for (const track of tracks) {
+    const path=track.path.filter(p=>now-p.now<2200);
+    if(!path.length || now-track.seen>220 || effects.has('tree')) continue;
+    ctx.beginPath();
+    for(const point of path) ctx.lineTo(point.x*w,point.y*h);
+    ctx.stroke();
+    const end=path[path.length-1];
+    star(end.x*w,end.y*h,6,'#fff4ce');
+  }
+  sparks=sparks.filter(spark=>now-spark.time<760);
+  for(const {point,time} of sparks) {
+    const t=(now-time)/760;
+    for(let i=0;i<12;i++) {
+      const angle=i*Math.PI/6, radius=(12+49*t)*(i%2?.6:1);
+      ellipse(point.x*w+Math.cos(angle)*radius,point.y*h+Math.sin(angle)*radius,3*(1-t),3*(1-t),'#fff8ed');
+    }
+  }
+  const snow=effects.has('snow');
+  flakes.slice(0,snow?64:(active?0:16)).forEach(([x,y,r,s])=>{
+    const speed=snow?.000065:.000025;
+    const xx=x*w+9*Math.sin(now*.001+y*12);
+    const yy=((y+now*speed*(.45+s))%1)*h;
+    ellipse(xx,yy,1+r*2.2,1+r*2.2,snow?'#fffdf4e8':'#fffaf2c9');
+  });
+  if(!active && !hasScene) {
+    ctx.save();
+    ctx.translate(w/2,h*.68);
+    ctx.scale(scale*.95,scale*.95);
+    ellipse(0,11,106,19,'#fffaf2');
+    tree();
+    star(0,-166,13,'#f9d486');
+    ctx.restore();
+  }
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
