@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Snowglobe Wishes · V1.4</title>
+<title>Snowglobe Wishes · V1.5</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#fff7f3;color:#544048;font-family:system-ui,sans-serif}
 main{width:min(100%,510px);margin:auto;padding:14px 14px max(18px,env(safe-area-inset-bottom))}
@@ -33,16 +33,18 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 .gift-target{position:absolute;top:88%;width:44px;height:44px;padding:0;transform:translate(-50%,-62%);border:0;background:transparent;border-radius:8px}
 .gift-target:focus-visible{outline:2px solid #b47d9a;outline-offset:-4px}
 .gift-target[hidden],.gift-surprise[hidden]{display:none}
-.gift-target[data-box="0"]{left:32%}.gift-target[data-box="1"]{left:68%}
-.gift-surprise{position:absolute;top:14%;width:27%;aspect-ratio:1;display:grid;place-items:center;font-size:clamp(24px,8vw,48px);background:#fff7e9;border:3px solid #fffaf0;border-radius:48% 46% 43% 47%;box-shadow:0 3px 13px #8f687350;pointer-events:none;animation:gift-pop .55s cubic-bezier(.2,1.45,.6,1) both}
+.gift-target[data-box="0"]{left:25%}.gift-target[data-box="1"]{left:42%}
+.gift-target[data-box="2"]{left:58%}.gift-target[data-box="3"]{left:75%}
+.gift-surprise{position:absolute;top:14%;width:24%;aspect-ratio:1;display:grid;place-items:center;font-size:clamp(24px,8vw,48px);background:#fff7e9;border:3px solid #fffaf0;border-radius:48% 46% 43% 47%;box-shadow:0 3px 13px #8f687350;pointer-events:none;animation:gift-pop .55s cubic-bezier(.2,1.45,.6,1) both}
 .gift-surprise[data-box="0"]{left:4%;rotate:-8deg}.gift-surprise[data-box="1"]{right:4%;rotate:8deg}
+.gift-surprise[data-box="2"]{left:5%;top:44%;rotate:6deg}.gift-surprise[data-box="3"]{right:5%;top:44%;rotate:-6deg}
 .gift-surprise img{width:100%;height:100%;object-fit:cover;border-radius:inherit;min-height:0}
 @keyframes gift-pop{from{opacity:0;transform:translateY(110%) scale(.18)}to{opacity:1;transform:translateY(0) scale(1)}}
 </style>
 </head>
 <body>
 <main>
-<header><h1>Snowglobe Wishes</h1><small>V1.4</small></header>
+<header><h1>Snowglobe Wishes</h1><small>V1.5</small></header>
 <details class="guide" id="guide" open>
 <summary id="guideTitle">How to Play · 使用指南</summary>
 <div class="guide-body">
@@ -57,10 +59,14 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 <div class="stage">
 <div class="snowfield">
 <canvas id="art" aria-label="圣诞雪景"></canvas>
-<button class="gift-target" id="gift0" data-box="0" type="button" aria-label="打开粉色礼物" aria-expanded="false"></button>
-<button class="gift-target" id="gift1" data-box="1" type="button" aria-label="打开薄荷色礼物" aria-expanded="false"></button>
+<button class="gift-target" id="gift0" data-box="0" type="button" aria-label="打开玫瑰粉礼物" aria-expanded="false"></button>
+<button class="gift-target" id="gift1" data-box="1" type="button" aria-label="打开薄荷绿礼物" aria-expanded="false"></button>
+<button class="gift-target" id="gift2" data-box="2" type="button" aria-label="打开香草金礼物" aria-expanded="false"></button>
+<button class="gift-target" id="gift3" data-box="3" type="button" aria-label="打开雾紫色礼物" aria-expanded="false"></button>
 <div class="gift-surprise" id="surprise0" data-box="0" hidden>🐰</div>
 <div class="gift-surprise" id="surprise1" data-box="1" hidden>🐻</div>
+<div class="gift-surprise" id="surprise2" data-box="2" hidden>🎀</div>
+<div class="gift-surprise" id="surprise3" data-box="3" hidden>🐱</div>
 </div>
 <div class="room">
 <div id="roomNote" class="room-note">打开相机后，你们会出现在这里</div>
@@ -103,15 +109,16 @@ const guideCopy = {
     layout:'上方 60% 是窗外雪景，下方 40% 是人像。三人拍摄时并排站，稍微退后一点，让所有脸都落在窗框下方。',
     setupTitle:'开拍前',
     setup:'用 iPhone Safari 打开网页，选择「自动人数」或手动选 1、2、3 人，再点「打开相机」并允许访问。手机竖放，确保每个人的脸和一只手都在画面内。',
-    gestureTitle:'五个手势',
+    gestureTitle:'六个手势',
     gestures:[
       '🎄 圣诞树｜伸出食指，从上往下画一个大 Z。',
       '🎅 圣诞老人｜竖起大拇指，停半拍。',
       '🦌 驯鹿｜在脸旁比 V，停半拍。',
       '⭐ 星星｜树出现后，用拇指和食指捏一下。',
-      '❄️ 飘雪｜树出现后，张开手掌约 0.3 秒。第一人就会落雪，每多一人撒雪会更密。'
+      '❄️ 飘雪｜树出现后，张开手掌约 0.3 秒。第一人就会落雪，每多一人撒雪会更密。',
+      '🎁 礼物｜树出现后，在胸前轻轻握拳约半秒。松开再握，就会打开下一盒。'
     ],
-    record:'想保存视频，可以用 iPhone 的屏幕录制。点「重拍」即可再来一轮。小鹿出现后，单伸食指左右移动，它会跟着跑。点树下的礼盒可开合，想换惊喜可以点「选礼物照片」，选最多两张。'
+    record:'想保存视频，可以用 iPhone 的屏幕录制。点「重拍」即可再来一轮。小鹿出现后，单伸食指左右移动，它会跟着跑。点树下的礼盒可开合，想换惊喜可以点「选礼物照片」，选最多四张。'
   },
   ja: {
     title:'How to Play · 遊び方',
@@ -124,15 +131,16 @@ const guideCopy = {
     layout:'上60％は窓の外の雪景色、下40％はカメラ映像です。3人で撮るときは横に並び、少し下がって全員の顔を下の枠に収めます。',
     setupTitle:'撮影の準備',
     setup:'iPhoneのSafariでページを開き、人数は自動か1〜3人を選びます。「打开相机」をタップし、カメラを許可してください。スマホは縦向きに置き、全員の顔と片手が画面に入るようにします。',
-    gestureTitle:'5つのジェスチャー',
+    gestureTitle:'6つのジェスチャー',
     gestures:[
       '🎄 ツリー｜人差し指を伸ばし、上から下へ大きくZを描きます。',
       '🎅 サンタ｜親指を立てて、少し止めます。',
       '🦌 トナカイ｜顔の横でVサインを作り、少し止めます。',
       '⭐ 星｜ツリーが出たら、親指と人差し指でつまむ動きをします。',
-      '❄️ 雪｜ツリーが出たら、手のひらを開いて約0.3秒キープ。1人目から雪が降り、参加する人が増えるほど雪が多くなります。'
+      '❄️ 雪｜ツリーが出たら、手のひらを開いて約0.3秒キープ。1人目から雪が降り、参加する人が増えるほど雪が多くなります。',
+      '🎁 プレゼント｜ツリーが出たら、胸の前で軽く握りこぶしを作り、約0.5秒キープ。手をゆるめてから、もう一度握ると次の箱が開きます。'
     ],
-    record:'動画を残すには、iPhoneの画面収録を使います。「重拍」で最初からやり直せます。トナカイが出たら、人差し指を左右に動かすと追いかけてきます。ツリーの下のプレゼントはタップで開閉できます。「选礼物照片」から写真を2枚まで選べます。'
+    record:'動画を残すには、iPhoneの画面収録を使います。「重拍」で最初からやり直せます。トナカイが出たら、人差し指を左右に動かすと追いかけてきます。ツリーの下のプレゼントはタップで開閉できます。「选礼物照片」から写真を4枚まで選べます。'
   },
   en: {
     title:'How to Play',
@@ -145,15 +153,16 @@ const guideCopy = {
     layout:'The snowy scene fills the top 60% and the camera fills the bottom 40%. For three people, stand side by side and take a small step back so every face fits below the windowsill.',
     setupTitle:'Before you film',
     setup:'Open the page in Safari on your iPhone. Choose the automatic head count or select 1, 2, or 3. Tap “打开相机” (Open camera) and allow access. Set your phone upright and keep everyone’s face and one hand each in frame.',
-    gestureTitle:'Five gestures',
+    gestureTitle:'Six gestures',
     gestures:[
       '🎄 Tree | Point with your index finger and draw a big Z from top to bottom.',
       '🎅 Santa | Give a thumbs-up and hold it for a beat.',
       '🦌 Reindeer | Hold a V sign beside your face for a beat.',
       '⭐ Star | Once the tree appears, pinch your thumb and index finger together.',
-      '❄️ Snow | Once the tree appears, hold an open palm for about 0.3 seconds. Snow starts with the first person and builds with each participant.'
+      '❄️ Snow | Once the tree appears, hold an open palm for about 0.3 seconds. Snow starts with the first person and builds with each participant.',
+      '🎁 Gifts | Once the tree appears, hold a relaxed fist near your chest for about half a second. Relax your hand, then make another fist to open the next box.'
     ],
-    record:'Use iPhone Screen Recording to save your video. Tap “重拍” (Retake) to start a new round. Once the reindeer appears, move one pointing finger sideways to guide it. Tap a gift to open or close it. Use “选礼物照片” to select up to two photos.'
+    record:'Use iPhone Screen Recording to save your video. Tap “重拍” (Retake) to start a new round. Once the reindeer appears, move one pointing finger sideways to guide it. Tap a gift to open or close it. Use “选礼物照片” to select up to four photos.'
   }
 };
 const languageButtons = [...document.querySelectorAll('[data-language]')];
@@ -210,6 +219,7 @@ function reset() {
   deerLeader=null;
   deerSeen=-Infinity;
   deerDirection=1;
+  lastGiftGesture=-Infinity;
   for (let i=0;i<giftBoxes.length;i++) {
     setGift(i,false);
     giftBoxes[i].hidden=active;
@@ -220,21 +230,30 @@ function reset() {
   cue.textContent = '伸出食指，画一个从上到下的 Z';
 }
 
-const giftBoxes = [byId('gift0'),byId('gift1')];
-const surprises = [byId('surprise0'),byId('surprise1')];
-const photoURLs = [null,null];
-const surpriseIcons = ['🐰','🐻'];
+const giftSlots = [
+  {x:.25, size:20, color:'#c9829b', ribbon:'#fff1dc', angle:-.10},
+  {x:.42, size:24, color:'#80aa98', ribbon:'#fff2d8', angle:.04},
+  {x:.58, size:21, color:'#d2aa73', ribbon:'#fff4ec', angle:-.05},
+  {x:.75, size:22, color:'#9b8cb7', ribbon:'#ffeadb', angle:.10}
+];
+const giftBoxes = giftSlots.map((_,i)=>byId('gift'+i));
+const surprises = giftSlots.map((_,i)=>byId('surprise'+i));
+const photoURLs = giftSlots.map(()=>null);
+const surpriseIcons = surprises.map(card=>card.textContent);
+const giftOpenedAt = giftSlots.map(()=>0);
+let lastGiftGesture = -Infinity;
 function setGift(i,open) {
   giftBoxes[i].setAttribute('aria-expanded',String(open));
   surprises[i].hidden = !open;
+  giftOpenedAt[i] = open ? performance.now() : 0;
 }
 for (let i=0;i<giftBoxes.length;i++) giftBoxes[i].onclick=()=>setGift(i,surprises[i].hidden);
 const photos=byId('photos');
 byId('choosePhotos').onclick=()=>photos.click();
 photos.onchange=()=>{
-  const files=[...photos.files].slice(0,2);
+  const files=[...photos.files].slice(0,giftSlots.length);
   if (!files.length) return;
-  for (let i=0;i<2;i++) {
+  for (let i=0;i<giftSlots.length;i++) {
     if (photoURLs[i]) URL.revokeObjectURL(photoURLs[i]);
     photoURLs[i]=null;
     surprises[i].textContent=surpriseIcons[i];
@@ -252,7 +271,7 @@ photos.onchange=()=>{
     image.src=url;
   }
   photos.value='';
-  cue.textContent='照片已选 · 点窗外的礼物打开';
+  cue.textContent='照片已选 · 握拳或点击礼盒打开';
 };
 
 byId('reset').onclick = reset;
@@ -288,20 +307,38 @@ function watch(track, points, now, face) {
   const palm = distance(wrist,points[9]);
   const [index,middle,ring,pinky] = [1,2,3,4].map(i=>fingerUp(points,i));
   const pinched = distance(thumb,tip) < .33*palm;
+  const thumbUp = fingerUp(points,0) && thumb.y < points[5].y-.2*palm;
+  const fingertips = [8,12,16,20];
+  const curled = fingertips.every((end,i)=>distance(points[end],points[[5,9,13,17][i]]) < .61*palm);
+  const tucked = distance(thumb,points[5]) < .70*palm;
   let pose = '';
   const longFingers = [8,12,16,20].filter((end,i)=>
     distance(wrist,points[end]) > distance(wrist,points[[5,9,13,17][i]])*1.3).length;
   if ((index && middle && ring && pinky) || (longFingers >= 3 && distance(tip,points[20]) > .65*palm)) pose = 'open';
+  else if (!index && !middle && !ring && !pinky && thumbUp) pose = 'santa';
+  else if (curled && tucked) pose = 'gift';
   else if (pinched && !middle && !ring && !pinky) pose = 'star';
   else if (index && middle && !ring && !pinky && distance(tip,points[12]) > .26*palm) pose = 'deer';
   else if (index && !middle && !ring && !pinky) pose = 'point';
-  else if (!index && !middle && !ring && !pinky && fingerUp(points,0) && thumb.y < points[5].y-.2*palm) pose = 'santa';
   const location = cover(tip);
+  if (pose !== 'gift') {
+    track.giftReleasedAt ??= now;
+    if (now-track.giftReleasedAt >= 170) track.giftFired = false;
+  } else track.giftReleasedAt = null;
   if (track.pose !== pose) {
     track.pose = pose;
     track.since = now;
     track.startX = wrist.x;
     track.path = [];
+  }
+  if (pose === 'gift' && effects.has('tree') && !track.giftFired && now-track.since >= 500) {
+    track.giftFired = true;
+    const next = surprises.findIndex(card=>card.hidden);
+    if (next >= 0 && now-lastGiftGesture >= 700) {
+      lastGiftGesture = now;
+      setGift(next,true);
+      cue.textContent = '打开了第 ' + (next+1) + ' 份礼物';
+    }
   }
   if (pose === 'point' && !effects.has('tree')) {
     track.path.push({...location,now});
@@ -544,6 +581,62 @@ function gift(x,y,size,color) {
   });
   ctx.restore();
 }
+function drawWrappedGift(x,y,slot,scale,age) {
+  const side=Math.max(20,slot.size*scale);
+  const open=age>=0;
+  const lift=open?1-Math.pow(1-clamp(age/460,0,1),3):0;
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(side,side);
+  ellipse(0,.02,.61,.10,'#7e627533');
+  ctx.rotate(slot.angle);
+  const paper=ctx.createLinearGradient(-.54,-.7,.55,.04);
+  paper.addColorStop(0,slot.color);
+  paper.addColorStop(.52,slot.color);
+  paper.addColorStop(1,'#755566');
+  shape(paper,()=>{
+    ctx.moveTo(-.46,-.59);ctx.lineTo(.50,-.59);ctx.lineTo(.44,.02);
+    ctx.quadraticCurveTo(.02,.08,-.40,.01);
+  });
+  shape('#fff9ee33',()=>{
+    ctx.moveTo(-.44,-.55);ctx.lineTo(.25,-.55);ctx.lineTo(.23,.035);ctx.lineTo(-.40,.01);
+  });
+  for (const [dx,dy] of [[-.27,-.36],[.26,-.25],[-.26,-.12],[.13,-.43]]) {
+    star(dx,dy,.045,'#fff8ea84');
+  }
+  brush(slot.ribbon,.12,()=>{
+    ctx.moveTo(-.035,-.58);ctx.quadraticCurveTo(-.01,-.32,-.026,.049);
+  });
+  if(open) ellipse(.015,-.56,.46,.105,'#67465b');
+  ctx.save();
+  ctx.translate(-.23*lift,-.52*lift);
+  ctx.rotate(-.36*lift);
+  shape(slot.color,()=>{
+    ctx.moveTo(-.55,-.71);ctx.quadraticCurveTo(.03,-.76,.55,-.71);
+    ctx.lineTo(.51,-.50);ctx.quadraticCurveTo(.02,-.45,-.52,-.51);
+  });
+  brush('#fff5e996',.035,()=>{
+    ctx.moveTo(-.50,-.685);ctx.quadraticCurveTo(-.02,-.72,.48,-.683);
+  });
+  brush(slot.ribbon,.12,()=>{ctx.moveTo(-.03,-.71);ctx.lineTo(-.028,-.492);});
+  brush(slot.ribbon,.062,()=>{
+    ctx.moveTo(-.03,-.72);ctx.bezierCurveTo(-.59,-1.11,-.56,-.69,-.03,-.72);
+    ctx.bezierCurveTo(.48,-1.12,.52,-.68,-.03,-.72);
+    ctx.quadraticCurveTo(-.14,-.66,-.22,-.55);
+    ctx.moveTo(-.03,-.72);ctx.quadraticCurveTo(.09,-.68,.19,-.56);
+  });
+  ellipse(-.03,-.72,.067,.049,'#fff5dc');
+  ctx.restore();
+  if (open && age<880) {
+    const t=age/880;
+    ctx.globalAlpha=1-t;
+    for (let i=0;i<6;i++) {
+      star((i-2.5)*(.11+t*.37),-.58-t*(.65+i%2*.18),.09-t*.045,i%2?'#fff6d6':'#edb1cd');
+    }
+  }
+  ctx.restore();
+}
+
 function tree() {
   illustration('tree',()=>{
     const random=pigment(68);
@@ -815,26 +908,10 @@ function render(now) {
     }
   }
   if (effects.has('tree') || !active) {
-    for (let i=0;i<2;i++) {
-      const x=w*(i===0?.32:.68), size=Math.max(18,14*scale);
-      const color=i===0?'#c78da5':'#87b5a5';
-      if (surprises[i].hidden) gift(x,ground+4,size,color);
-      else {
-        shape(color,()=>{
-          ctx.moveTo(x-size/2,ground-size*.28);
-          ctx.lineTo(x+size/2,ground-size*.28);
-          ctx.lineTo(x+size*.38,ground+4);
-          ctx.lineTo(x-size*.38,ground+4);
-        });
-        ctx.save();
-        ctx.translate(x+size*.42,ground-size*.37);
-        ctx.rotate(i===0?-.45:.45);
-        ctx.fillStyle=color;
-        ctx.fillRect(-size/2,-size*.18,size,size*.24);
-        ctx.restore();
-        star(x,ground-size*.57,4,'#fff6cc');
-      }
-    }
+    giftSlots.forEach((slot,i)=>{
+      const age = surprises[i].hidden ? -1 : now-giftOpenedAt[i];
+      drawWrappedGift(w*slot.x,ground+5,slot,scale,age);
+    });
   }
   const snow=effects.has('snow');
   flakes.slice(0,snow?(credits.size?30+credits.size*11:64):(active?9:16)).forEach(([x,y,r,s])=>{
