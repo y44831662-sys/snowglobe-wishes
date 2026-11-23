@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Snowglobe Wishes · V1.5</title>
+<title>yiyang’s Christmas Fantasy · V1.6</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#fff7f3;color:#544048;font-family:system-ui,sans-serif}
 main{width:min(100%,510px);margin:auto;padding:14px 14px max(18px,env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}h1{font:italic 30px Georgia;margin:0;color:#654858}small{font-size:11px}
+header{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}h1{line-height:1.05;font:italic clamp(19px,5.65vw,30px) Georgia;margin:0;color:#654858}small{font-size:11px}
 main{width:min(100%,510px,calc(40svh + 28px))}
 .stage{position:relative;overflow:hidden;border-radius:18px;aspect-ratio:9/16;box-shadow:0 10px 32px #805f722a;background:#f2e5df}
 .snowfield,.room{position:absolute;left:0;right:0;overflow:hidden}
@@ -44,7 +44,7 @@ video,canvas{position:absolute;width:100%;height:100%;inset:0}video{object-fit:c
 </head>
 <body>
 <main>
-<header><h1>Snowglobe Wishes</h1><small>V1.5</small></header>
+<header><h1>yiyang’s Christmas Fantasy</h1><small>V1.6</small></header>
 <details class="guide" id="guide" open>
 <summary id="guideTitle">How to Play · 使用指南</summary>
 <div class="guide-body">
@@ -113,7 +113,7 @@ const guideCopy = {
     gestures:[
       '🎄 圣诞树｜伸出食指，从上往下画一个大 Z。',
       '🎅 圣诞老人｜竖起大拇指，停半拍。',
-      '🦌 驯鹿｜在脸旁比 V，停半拍。',
+      '🦌 驯鹿｜每个人比 V，停半拍，就能叫来一只自己的小鹿。',
       '⭐ 星星｜树出现后，用拇指和食指捏一下。',
       '❄️ 飘雪｜树出现后，张开手掌约 0.3 秒。第一人就会落雪，每多一人撒雪会更密。',
       '🎁 礼物｜树出现后，在胸前轻轻握拳约半秒。松开再握，就会打开下一盒。'
@@ -135,7 +135,7 @@ const guideCopy = {
     gestures:[
       '🎄 ツリー｜人差し指を伸ばし、上から下へ大きくZを描きます。',
       '🎅 サンタ｜親指を立てて、少し止めます。',
-      '🦌 トナカイ｜顔の横でVサインを作り、少し止めます。',
+      '🦌 トナカイ｜一人ずつVサインを少しキープすると、自分のトナカイが現れます。',
       '⭐ 星｜ツリーが出たら、親指と人差し指でつまむ動きをします。',
       '❄️ 雪｜ツリーが出たら、手のひらを開いて約0.3秒キープ。1人目から雪が降り、参加する人が増えるほど雪が多くなります。',
       '🎁 プレゼント｜ツリーが出たら、胸の前で軽く握りこぶしを作り、約0.5秒キープ。手をゆるめてから、もう一度握ると次の箱が開きます。'
@@ -157,7 +157,7 @@ const guideCopy = {
     gestures:[
       '🎄 Tree | Point with your index finger and draw a big Z from top to bottom.',
       '🎅 Santa | Give a thumbs-up and hold it for a beat.',
-      '🦌 Reindeer | Hold a V sign beside your face for a beat.',
+      '🦌 Reindeer | Each person can hold a V sign for a beat to summon their own reindeer.',
       '⭐ Star | Once the tree appears, pinch your thumb and index finger together.',
       '❄️ Snow | Once the tree appears, hold an open palm for about 0.3 seconds. Snow starts with the first person and builds with each participant.',
       '🎁 Gifts | Once the tree appears, hold a relaxed fist near your chest for about half a second. Relax your hand, then make another fist to open the next box.'
@@ -189,11 +189,27 @@ const effects = new Map();
 let hands, faces, stream, active = false, tracks = [], roundCount = 0;
 let credits = new Set(), sparks = [], pendingStar = false, lastFrame = -1, lastFace = -Infinity, faceCount = 0;
 let faceDetections = [], nextId = 0, observedCount = 0, countSince = 0, stableCount = 0;
-let deerX=.84, deerTarget=.84, deerDirection=1, deerLeader=null, deerSeen=-Infinity;
+const reindeer = new Map();
+const scarves = ['#d9869b','#83b5a3','#a890bd'];
+const deerHomes = [.83,.24,.57];
 const messages = {tree:'树长出来啦 · 比赞或比 V 来装饰',santa:'圣诞老人来送礼物了',deer:'小驯鹿找到圣诞树了',star:'星星和树灯都亮啦 · 张掌停一下就能撒雪',snow:'Merry Christmas!'};
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
+function summonDeer(owner,now) {
+  const limit = Number(people.value) || (active ? Math.max(1,faceCount,stableCount,roundCount) : 3);
+  if (reindeer.has(owner) || reindeer.size >= limit) return;
+  const index = reindeer.size;
+  const x = deerHomes[index];
+  reindeer.set(owner,{index,x,target:x,direction:index===1?1:-1,time:now,guidedUntil:0});
+  effects.set('deer',{time:now});
+  cue.textContent = '第 ' + (index+1) + ' 只驯鹿来了 · 伸食指左右引导';
+}
 function trigger(name, point) {
+  if (name === 'deer') {
+    const previewSlot = deerHomes.findIndex((_,i)=>!reindeer.has('preview'+i));
+    if (previewSlot>=0) summonDeer('preview'+previewSlot,performance.now());
+    return;
+  }
   if (effects.has(name)) return;
   if (name === 'star' && !effects.has('tree')) {
     pendingStar = true;
@@ -215,10 +231,7 @@ function reset() {
   effects.clear();
   tracks = [];
   credits.clear();
-  deerX=deerTarget=.84;
-  deerLeader=null;
-  deerSeen=-Infinity;
-  deerDirection=1;
+  reindeer.clear();
   lastGiftGesture=-Infinity;
   for (let i=0;i<giftBoxes.length;i++) {
     setGift(i,false);
@@ -289,20 +302,20 @@ function fingerUp(points, finger) {
 function isZ(path) {
   if (path.length < 5) return false;
   const first = path[0], last = path[path.length-1];
-  if (last.y-first.y < .095) return false;
+  if (last.y-first.y < .079) return false;
   for (const direction of [1,-1]) {
     let peak = first.x * direction;
     let trough = Infinity;
     for (const point of path) {
       const x = point.x * direction;
       if (trough === Infinity) peak = Math.max(peak,x);
-      if (peak-first.x*direction > .055 && peak-x > .075) trough = Math.min(trough,x);
-      if (x-trough > .05) return true;
+      if (peak-first.x*direction > .045 && peak-x > .060) trough = Math.min(trough,x);
+      if (x-trough > .042) return true;
     }
   }
   return false;
 }
-function watch(track, points, now, face) {
+function watch(track, points, now) {
   const wrist = points[0], tip = points[8], thumb = points[4];
   const palm = distance(wrist,points[9]);
   const [index,middle,ring,pinky] = [1,2,3,4].map(i=>fingerUp(points,i));
@@ -318,23 +331,25 @@ function watch(track, points, now, face) {
   else if (!index && !middle && !ring && !pinky && thumbUp) pose = 'santa';
   else if (curled && tucked) pose = 'gift';
   else if (pinched && !middle && !ring && !pinky) pose = 'star';
-  else if (index && middle && !ring && !pinky && distance(tip,points[12]) > .26*palm) pose = 'deer';
+  else if (index && middle && !ring && !pinky && distance(tip,points[12]) > .21*palm) pose = 'deer';
   else if (index && !middle && !ring && !pinky) pose = 'point';
   const location = cover(tip);
   if (pose !== 'gift') {
     track.giftReleasedAt ??= now;
     if (now-track.giftReleasedAt >= 170) track.giftFired = false;
   } else track.giftReleasedAt = null;
+  if (pose) track.lastPoseSeen = now;
+  else if (track.pose && now-(track.lastPoseSeen??now)<115) return;
   if (track.pose !== pose) {
     track.pose = pose;
     track.since = now;
     track.startX = wrist.x;
     track.path = [];
   }
-  if (pose === 'gift' && effects.has('tree') && !track.giftFired && now-track.since >= 500) {
+  if (pose === 'gift' && effects.has('tree') && !track.giftFired && now-track.since >= 460) {
     track.giftFired = true;
     const next = surprises.findIndex(card=>card.hidden);
-    if (next >= 0 && now-lastGiftGesture >= 700) {
+    if (next >= 0 && now-lastGiftGesture >= 650) {
       lastGiftGesture = now;
       setGift(next,true);
       cue.textContent = '打开了第 ' + (next+1) + ' 份礼物';
@@ -342,23 +357,20 @@ function watch(track, points, now, face) {
   }
   if (pose === 'point' && !effects.has('tree')) {
     track.path.push({...location,now});
-    track.path = track.path.filter(p=>now-p.now<2200);
+    track.path = track.path.filter(p=>now-p.now<2450);
     if (isZ(track.path)) trigger('tree');
   }
-  if ((pose === 'santa' || pose === 'deer') && now-track.since > 320) {
-    const nearFace = !face || distance(tip,face) < Math.max(.14,face.width*1.75);
-    if (pose === 'santa' || nearFace) trigger(pose,location);
+  if (pose === 'santa' && now-track.since >= 245) trigger('santa',location);
+  const owner = track.faceId ?? track.id;
+  if (pose === 'deer' && now-track.since >= 185) summonDeer(owner,now);
+  if (pose === 'star' && now-track.since >= 175) trigger('star',location);
+  const companion = reindeer.get(owner);
+  if (pose === 'point' && companion && effects.has('tree') &&
+      (now < companion.guidedUntil || Math.abs(track.startX-wrist.x) > .019)) {
+    companion.target = clamp(location.x,.13,.87);
+    companion.guidedUntil = now+1300;
   }
-  if (pose === 'star' && now-track.since > 230) trigger('star',location);
-  if (pose === 'point' && effects.has('deer') && effects.has('tree') &&
-      (deerLeader === track.id || now-deerSeen > 540) &&
-      (deerLeader === track.id || Math.abs(track.startX-wrist.x) > .032)) {
-    deerLeader = track.id;
-    deerTarget = clamp(location.x,.14,.86);
-    deerSeen = now;
-  }
-  if (pose === 'open' && effects.has('tree') && now-track.since >= 275) {
-    const owner = track.faceId ?? track.id;
+  if (pose === 'open' && effects.has('tree') && now-track.since >= 225) {
     if (credits.has(owner) || (roundCount > 1 && track.faceId == null)) return;
     credits.add(owner);
     sparks.push({point:cover(wrist),time:now});
@@ -401,7 +413,12 @@ function detect(now) {
   const unassigned = [];
   for (const points of landmarks) {
     const wrist = points[0];
-    const nearest = faceDetections.filter(face=>now-face.seen<450).sort((a,b)=>
+    const visibleFaces=faceDetections.filter(face=>now-face.seen<620);
+    const prior=[...available].filter(track=>now-track.seen<240)
+      .sort((a,b)=>distance(a.wrist,wrist)-distance(b.wrist,wrist))[0];
+    const previousFace=prior && distance(prior.wrist,wrist)<.105
+      ? visibleFaces.find(face=>face.id===prior.faceId) : null;
+    const nearest = previousFace ?? visibleFaces.sort((a,b)=>
       Math.abs(a.x-wrist.x)-Math.abs(b.x-wrist.x))[0];
     if (!nearest) {
       unassigned.push({points});
@@ -423,7 +440,7 @@ function detect(now) {
     track.wrist = wrist;
     track.faceId = face?.id ?? track.faceId;
     track.seen = now;
-    watch(track,points,now,face);
+    watch(track,points,now);
     nextTracks.push(track);
   }
   tracks = [...nextTracks,...available];
@@ -626,6 +643,16 @@ function drawWrappedGift(x,y,slot,scale,age) {
     ctx.moveTo(-.03,-.72);ctx.quadraticCurveTo(.09,-.68,.19,-.56);
   });
   ellipse(-.03,-.72,.067,.049,'#fff5dc');
+  ctx.save();
+  ctx.translate(.24,-.49);
+  ctx.rotate(.24);
+  shape('#fff5e4',()=>{
+    ctx.moveTo(-.09,-.07);ctx.quadraticCurveTo(-.02,-.14,.08,-.08);
+    ctx.quadraticCurveTo(.12,.07,.07,.13);
+    ctx.quadraticCurveTo(-.07,.14,-.10,.08);
+  });
+  star(.006,.033,.061,slot.color);
+  ctx.restore();
   ctx.restore();
   if (open && age<880) {
     const t=age/880;
@@ -743,8 +770,7 @@ function deer() {
     for(let i=0;i<8;i++) ellipse(random()*17-8.5,-60+random()*8,.65,.45,'#fff0d0ae');
   });
 }
-function pop(name,x,y,draw,now,scale=1) {
-  const effect=effects.get(name);
+function pop(name,x,y,draw,now,scale=1,effect=effects.get(name)) {
   if(!effect) return;
   const t=clamp((now-effect.time)/450,0,1);
   ctx.save();
@@ -800,6 +826,26 @@ function paintScenery(w,h,now) {
     } finally {ctx=screen;}
   }
   ctx.drawImage(scenery,0,0,w,h);
+  for(let i=0;i<3;i++){
+    const x=((now*(.009+i*.003)+w*(.38+i*.37))%(w*1.7))-w*.35;
+    const y=h*(.33+i*.15);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(w*.31,h*.038);
+    const mist=ctx.createRadialGradient(0,0,0,0,0,1);
+    mist.addColorStop(0,'#fff5f275');
+    mist.addColorStop(1,'#fff5f200');
+    ellipse(0,0,1,1,mist);
+    ctx.restore();
+  }
+  const streak=((now+2600)%10500)/10500;
+  if(streak<.13){
+    const progress=streak/.13, x=w*(.12+.67*progress), y=h*(.09+.14*progress);
+    ctx.globalAlpha=Math.sin(Math.PI*progress)*.65;
+    brush('#fff5d2',.9,()=>{ctx.moveTo(x-w*.11,y-h*.023);ctx.lineTo(x,y);});
+    star(x,y,3.5,'#fff7de');
+    ctx.globalAlpha=1;
+  }
   for(let i=0;i<8;i++){
     const x=w*(.08+((i*37)%89)/105),y=h*(.12+(i*17%41)/100);
     ctx.globalAlpha=.4+.22*Math.sin(now*.0018+i);
@@ -809,7 +855,7 @@ function paintScenery(w,h,now) {
 }
 
 function render(now) {
-  if (active && now-lastDetection > 65) {
+  if (active && now-lastDetection > 50) {
     lastDetection=now;
     try { detect(now); } catch(error) {
       console.error(error);
@@ -839,34 +885,66 @@ function render(now) {
     ellipse(0,0,1,1,snowWash);
     ctx.restore();
   }
-  pop('tree',w/2,ground,tree,now,scale);
+  const sway=.029*Math.sin(now*.00165)+.009*Math.sin(now*.0031);
+  pop('tree',w/2,ground,()=>{ctx.rotate(sway);tree();},now,scale);
   pop('santa',w*.16,ground+7,santa,now,scale*.68);
-  const travel = deerTarget-deerX;
-  if (Math.abs(travel)>.006) deerDirection=Math.sign(travel);
-  deerX += travel*.11;
-  const running=Math.abs(travel)>.016;
-  const step=running?Math.sin(now*.024):0;
-  const hop=running?Math.abs(step)*8:Math.max(0,Math.sin(now*.003))*1.4;
-  pop('deer',w*deerX,ground+9-hop,()=>{
-    ctx.save();
-    ctx.scale(deerDirection,1);
-    if (running) {
-      for (const side of [-1,1]) {
-        brush('#9c7161',3,()=>{
-          ctx.moveTo(side*7,-8);
-          ctx.quadraticCurveTo(side*8+step*3,-3,side*10+side*step*8,3-Math.max(0,side*step)*4);
-        });
+  for (const companion of reindeer.values()) {
+    const {index}=companion;
+    const travel=companion.target-companion.x;
+    if (Math.abs(travel)>.006) companion.direction=Math.sign(travel);
+    companion.x+=travel*.115;
+    const running=Math.abs(travel)>.013;
+    const step=running?Math.sin(now*.024+index):0;
+    const hop=running?Math.abs(step)*8:Math.max(0,Math.sin(now*.003+index))*1.7;
+    pop('deer',w*companion.x,ground+10+(index-1)*6-hop,()=>{
+      ctx.save();
+      ctx.scale(companion.direction,1);
+      if (running) {
+        for (const side of [-1,1]) {
+          brush('#9c7161',3,()=>{
+            ctx.moveTo(side*7,-8);
+            ctx.quadraticCurveTo(side*8+step*3,-3,side*10+side*step*8,3-Math.max(0,side*step)*4);
+          });
+        }
       }
+      deer();
+      brush(scarves[index],4.6,()=>{
+        ctx.moveTo(-12,-22);ctx.quadraticCurveTo(1,-16,13,-21);
+        ctx.moveTo(7,-19);ctx.quadraticCurveTo(13,-14,12,-9);
+      });
+      ctx.restore();
+    },now,scale*(.64-index*.065),companion);
+  }
+  const crownX=w/2+Math.sin(sway)*165*scale;
+  const top=ground-Math.cos(sway)*165*scale;
+  if (effects.has('tree')) {
+    const age=now-effects.get('tree').time;
+    if(age<3000){
+      const progress=clamp(age/2300,0,1);
+      for(let i=0;i<26;i++){
+        const height=progress-i*.018;
+        if(height<0 || height>1) continue;
+        const x=w/2+Math.sin(height*21)*((1-height)*51+4)*scale;
+        const y=ground-height*158*scale;
+        ctx.globalAlpha=(1-i/26)*clamp((3000-age)/550,0,1);
+        ellipse(x,y,(.5+(1-i/26)*1.8)*scale,(.5+(1-i/26)*1.8)*scale,'#fff1bb');
+      }
+      ctx.globalAlpha=1;
     }
-    deer();
-    ctx.restore();
-  },now,scale*.69);
-  const top=ground-165*scale;
+    for (let i=0;i<7;i++) {
+      const phase=(now*.00024+i/7)%1;
+      const x=crownX+(w/2-crownX)*phase+Math.sin(now*.0017+i*2.1)*(9+65*phase)*scale;
+      const y=top+phase*144*scale;
+      ctx.globalAlpha=.48*Math.sin(phase*Math.PI);
+      star(x,y,(1.8+phase*2)*scale,'#fff5d4');
+    }
+    ctx.globalAlpha=1;
+  }
   const starEffect=effects.get('star');
   if(starEffect) {
     const t=clamp((now-starEffect.time)/670,0,1);
     const origin=starEffect.point??{x:.5,y:.38};
-    const x=origin.x*w+(w/2-origin.x*w)*t;
+    const x=origin.x*w+(crownX-origin.x*w)*t;
     const y=origin.y*h+(top-origin.y*h)*t-Math.sin(t*Math.PI)*20;
     const glow=ctx.createRadialGradient(x,y,0,x,y,21*scale);
     glow.addColorStop(0,'#fff2c4b8');
@@ -876,7 +954,8 @@ function render(now) {
     star(x-.7*scale,y-.7*scale,7*scale,'#fff4cb');
     if (t>.4) {
       [[-44,-29],[38,-31],[-25,-57],[12,-28],[27,-61],[-16,-93],[8,-79],[1,-116]].forEach(([lx,ly],i)=>{
-        const dx=w/2+lx*scale,dy=ground+ly*scale;
+        const dx=w/2+(lx*Math.cos(sway)-ly*Math.sin(sway))*scale;
+        const dy=ground+(lx*Math.sin(sway)+ly*Math.cos(sway))*scale;
         const halo=ctx.createRadialGradient(dx,dy,0,dx,dy,13*scale);
         halo.addColorStop(0,'#fff3c8d9');
         halo.addColorStop(1,'#fff3c800');
@@ -891,7 +970,7 @@ function render(now) {
   ctx.lineCap='round';
   ctx.strokeStyle='#d1eee3';
   for (const track of tracks) {
-    const path=track.path.filter(p=>now-p.now<2200);
+    const path=track.path.filter(p=>now-p.now<2450);
     if(!path.length || now-track.seen>220 || effects.has('tree')) continue;
     ctx.beginPath();
     for(const point of path) ctx.lineTo(point.x*w,point.y*h);
@@ -914,9 +993,9 @@ function render(now) {
     });
   }
   const snow=effects.has('snow');
-  flakes.slice(0,snow?(credits.size?30+credits.size*11:64):(active?9:16)).forEach(([x,y,r,s])=>{
-    const speed=snow?.000065:.000025;
-    const xx=x*w+9*Math.sin(now*.001+y*12);
+  flakes.slice(0,snow?(credits.size?30+credits.size*11:64):18).forEach(([x,y,r,s])=>{
+    const speed=snow?.000054+r*.000047:.000017+r*.000013;
+    const xx=x*w+(5+r*13)*Math.sin(now*.00085+y*12);
     const yy=((y+now*speed*(.45+s))%1)*h;
     ellipse(xx,yy,1+r*2.2,1+r*2.2,snow?'#fffdf4e8':'#fffaf2c9');
   });
@@ -924,6 +1003,7 @@ function render(now) {
     ctx.save();
     ctx.translate(w/2,ground);
     ctx.scale(scale*.95,scale*.95);
+    ctx.rotate(sway);
     tree();
     star(0,-166,13,'#f9d486');
     ctx.restore();
